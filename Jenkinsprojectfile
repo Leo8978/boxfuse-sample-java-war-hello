@@ -1,56 +1,58 @@
 pipeline {
     agent any
     parameters {
-        string(name: 'BRANCH_NAME', defaultValue: 'fe/dev', description: 'Specify the branch name to deploy')
-    }
+  choice(
+    name: 'PARAMETER_NAME', // Name of the parameter to be displayed
+    choices: ['fe/dev', 'fe/qa', 'master'], // List of available choices
+    description: 'Specify the branch name to deploy', // Optional description of the parameter
+  )
+}
+
     stages {
         stage("GIT checkout") {
             steps {
                 script {
                     // Checkout the specified branch
-                    def branchName = params.BRANCH_NAME
-                    checkout([$class: 'GitSCM', branches: [[name: branchName]], userRemoteConfigs: [[url: 'https://github.com/RAJANI9/boxfuse-sample-java-war-hello.git']]])
+                    def parameterName = params.PARAMETER_NAME
+                    checkout([$class: 'GitSCM', parameters: [[name: parameterName]], userRemoteConfigs: [[url: 'https://github.com/bchandan9898/boxfuse-sample-java-war-hello.git']]])
                 }
             }
          }
-    
-            
-            }
-        }
+        
         stage("Build") {
             steps {
                 sh "mvn clean package"
                 sh "mv target/hello-1.0.war target/boxfuse-sample-java-war-hello.war"
             }
         }
-        stage("Deploy to Dev") {
+        stage("Deploy to DEV-ENVI") {
             when {
-                expression { params.BRANCH_NAME == 'fe/dev' }
+                expression { params.PARAMETER_NAME == 'fe/dev' }
             }
             steps {
-                deployToTomcat('18.60.211.61', 'tomcat', 'tomcat', 'http://18.60.211.61:8080/manager/text', '/boxfuse-sample-java-war-hello', 'Dev')
+                deployToTomcat('13.126.253.250', 'tomcat', 'tomcat', 'http://13.126.253.250:8080/manager/text', '/boxfuse-sample-java-war-hello', 'DEV-ENVI')
             }
         }
-        stage("Deploy to QA") {
+        stage("Deploy to QA-ENVI") {
             when {
-                expression { params.BRANCH_NAME == 'fe/qa' }
+                expression { params.PARAMETER_NAME == 'fe/qa' }
             }
             steps {
-                deployToTomcat('18.61.69.228', 'tomcat', 'tomcat', 'http://18.61.69.228:8080/manager/text', '/boxfuse-sample-java-war-hello', 'QA')
+                deployToTomcat('13.201.47.54', 'tomcat', 'tomcat', 'http://13.201.47.54:8080/manager/text', '/boxfuse-sample-java-war-hello', 'QA-ENVI')
             }
         }
-        stage("Deploy to Prod") {
+        stage("Deploy to PROD-ENVI") {
             when {
-                expression { params.BRANCH_NAME == 'master' }
+                expression { params.PARAMETER_NAME == 'master' }
             }
             steps {
-                input(message: "Do you want to proceed to PROD?", ok: "Proceed") // Approval step
+                input(message: "Do you want to proceed to PROD-ENVI?", ok: "Proceed") // Approval step
 
-                // Deploy to PROD server after approval
-                deployToTomcat('18.61.127.215', 'tomcat', 'tomcat', 'http://18.61.127.215:8080/manager/text', '/boxfuse-sample-java-war-hello', 'Prod')
+                // Deploy to PROD-ENVI server after approval
+                deployToTomcat('3.109.214.122', 'tomcat', 'tomcat', 'http://3.109.214.122:8080/manager/text', '/boxfuse-sample-java-war-hello', 'PROD-ENVI')
                 
                 // Send Slack notification
-                slackSend(channel: '7-30am-cloud-devops-batch', message: "Deployment to PROD has been approved by manager.")
+                slackSend(channel: '7-30am-cloud-devops-batch', message: "Deployment to PROD-ENVI has been approved by manager.")
             }
         }
     }
